@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="pointcloud_demo" exec="table" >
+  <node pkg="pointcloud_demo" exec="table" output="screen">
     <remap from="pcl_handler" to="/camera/depth/color/points" />
   </node>
 

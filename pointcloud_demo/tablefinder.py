@@ -1,3 +1,4 @@
+import pcl
 import rclpy
 from rclpy.node import Node
 import sensor_msgs_py.point_cloud2
@@ -18,25 +19,30 @@ class TableFind(Node):
         self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
         self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
 
-    def pcl_handler(self, pointcloud):
+    def pcl_handler(self, pcl_msg):
         """ Get the point cloud and perform some transformations and publish them """
         # Convert ROS2 message to a PointCloud used by PCL
-        points = pcl.PointCloud(sensor_msgs_py.point_cloud2.read_points(pointcloud))
-
-        # Apply the CropBox filter to remove points that are outside of a given bounding box
-        # See https://github.com/strawlab/python-pcl/blob/master/examples/cropbox.py for another example
-        crop_out = PointCloud()
-        crop_box = points.make_cropbox()
-        crop_box.set_MinMax(-0.75, -0.6, 0.1, 0.5, 0.1, 2.0)
-        crop_box.Filtering(crop_out)
-
-        # Convert output point cloud to a ros message
-        ros_cropped = sensor_msgs_py.point_cloud2.create_cloud_xyz32(
-            points.header,
-            crop_out.to_array()
+        pcl_in = pcl.PointCloud(
+            sensor_msgs_py.point_cloud2.read_points_numpy(pcl_msg, ["x", "y", "z"])
         )
 
-        self._cropped.publish(ros_cropped)
+        # Apply the CropBox filter to remove points that are outside of a given bounding box
+        crop_box = pcl_in.make_cropbox()
+
+        # xmin, ymin, zmin, 1.0 (homogenous point of the lower left corner)
+        # xmax, ymax, zmax, 1.0 (homogenous point of the upper right corner)
+        crop_box.set_MinMax(-0.75, -0.6, 0.1, 1.0, 0.5, 0.1, 2.0, 1.0)
+
+        pcl_cropped = crop_box.filter()
+
+        # Convert output point cloud to a ros message
+        cropped_msg = sensor_msgs_py.point_cloud2.create_cloud_xyz32(
+            pcl_msg.header,
+            pcl_cropped.to_array()
+        )
+
+        # Publish the cropped point cloud
+        self._cropped.publish(cropped_msg)
 
 
 def table_entry(args=None):

@@ -1,6 +1,9 @@
 <launch>
-  <node pkg="pointcloud_demo" exec="table" />
-  <include file="$(find-pkg-shared realsense2_camera)/rs_launch.py >
+  <node pkg="pointcloud_demo" exec="table" >
+    <remap from="pcl_handler" to="/camera/depth/color/points" />
+  </node>
+
+  <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py" >
     <arg name="depth_module.profile" value="1280x720x30"/>
     <arg name="pointcloud.enable" value="true" />
   </include>

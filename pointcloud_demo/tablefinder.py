@@ -18,6 +18,7 @@ class TableFind(Node):
         super().__init__("table_find")
         self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
         self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
+        self._voxel =   self.create_publisher(PointCloud2, "pcl_voxel", 10)
 
     def pcl_handler(self, pcl_msg):
         """ Get the point cloud and perform some transformations and publish them """
@@ -44,6 +45,20 @@ class TableFind(Node):
         # Publish the cropped point cloud
         self._cropped.publish(cropped_msg)
 
+        # Downsample the point cloud to create a less dense point cloud which
+        # decreases processing time and puts points on a regular grid
+        # Not necessary but it does help performance
+        voxel_filter = pcl_cropped.make_voxel_grid_filter()
+        voxel_filter.set_leaf_size(0.01, 0.01, 0.01)
+        pcl_voxel = voxel_filter.filter()
+
+        voxel_msg = sensor_msgs_py.point_cloud2.create_cloud_xyz32(
+            pcl_msg.header,
+            pcl_voxel.to_array()
+        )
+
+        # publish the voxelized point cloud
+        self._voxel.publish(voxel_msg)
 
 def table_entry(args=None):
     rclpy.init(args=args)

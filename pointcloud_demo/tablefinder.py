@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 import sensor_msgs_py.point_cloud2
 from sensor_msgs.msg import PointCloud2
+import numpy as np
 
 class TableFind(Node):
     def __init__(self):
@@ -14,11 +15,15 @@ class TableFind(Node):
         Publishers
         ----------
         pcl_cropped (sensor_msgs/msg/PointCloud2): The cropped point cloud
+        pcl_voxel   (sensor_msgs/msg/PointCloud2): The voxelized point cloud
+        pcl_inplane (sensor_msgs/msg/PointCloud2): The plane extracted from the point cloud
         """
         super().__init__("table_find")
         self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
         self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
         self._voxel =   self.create_publisher(PointCloud2, "pcl_voxel", 10)
+        self._voxel =   self.create_publisher(PointCloud2, "pcl_voxel", 10)
+        self._inplane =   self.create_publisher(PointCloud2, "pcl_inplane", 10)
 
     def pcl_handler(self, pcl_msg):
         """ Get the point cloud and perform some transformations and publish them """
@@ -33,7 +38,6 @@ class TableFind(Node):
         # xmin, ymin, zmin, 1.0 (homogenous point of the lower left corner)
         # xmax, ymax, zmax, 1.0 (homogenous point of the upper right corner)
         crop_box.set_MinMax(-0.75, -0.6, 0.1, 1.0, 0.5, 0.1, 2.0, 1.0)
-
         pcl_cropped = crop_box.filter()
 
         # Convert output point cloud to a ros message
@@ -59,6 +63,29 @@ class TableFind(Node):
 
         # publish the voxelized point cloud
         self._voxel.publish(voxel_msg)
+
+        # segment the table from the objects
+        segmenter = pcl_voxel.make_segmenter()
+        segmenter.set_model_type(pcl.SACMODEL_PLANE)
+        segmenter.set_distance_threshold(0.02)
+        indices, coefficients = segmenter.segment()
+
+        # We now have indices of the inliers of the plane
+        # and the coefficients of that plane
+        # Next, need to convert to point clouds
+        if len(indices) == 0:
+            # No plane was found
+            return
+
+        # Get all the points that lie in the plane and crate a new pointcloud with them
+        pcl_inplane = np.copy(pcl_voxel)[indices]
+        inplane_msg = sensor_msgs_py.point_cloud2.create_cloud_xyz32(
+            pcl_msg.header,
+            pcl_inplane
+        )
+
+        self._inplane.publish(inplane_msg)
+
 
 def table_entry(args=None):
     rclpy.init(args=args)

@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="pointcloud_demo" exec="table" />
+  <include file="$(find-pkg-shared realsense2_camera)/rs_launch.py >
+    <arg name="depth_module.profile" value="1280x720x30"/>
+    <arg name="pointcloud.enable" value="true" />
+  </include>
+</launch>

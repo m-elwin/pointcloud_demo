@@ -18,7 +18,7 @@ class TableFind(Node):
         self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
         self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
 
-    def pcl_handler(pointcloud):
+    def pcl_handler(self, pointcloud):
         """ Get the point cloud and perform some transformations and publish them """
         # Convert ROS2 message to a PointCloud used by PCL
         points = pcl.PointCloud(sensor_msgs_py.point_cloud2.read_points(pointcloud))

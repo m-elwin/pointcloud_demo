@@ -77,7 +77,7 @@ class TableFind(Node):
             # No plane was found
             return
 
-        # Get all the points that lie in the plane and crate a new pointcloud with them
+        # Get all the points that lie in the plane and create a new pointcloud with them
         pcl_inplane = np.copy(pcl_voxel)[indices]
         inplane_msg = sensor_msgs_py.point_cloud2.create_cloud_xyz32(
             pcl_msg.header,

@@ -9,7 +9,8 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml', 'launch/table_demo.launch.xml', 'config/pcl.rviz']),
+        ('share/' + package_name,
+         ['package.xml', 'launch/table_demo.launch.xml', 'config/pcl.rviz']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

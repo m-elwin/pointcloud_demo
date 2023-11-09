@@ -5,9 +5,12 @@ import sensor_msgs_py.point_cloud2
 from sensor_msgs.msg import PointCloud2
 import numpy as np
 
+
 class TableFind(Node):
     def __init__(self):
         """
+        Create a ROS Node that extracts a table (or other flat surface) from a point cloud.
+
         Subscriptions
         -------------
         pcl_handler (sensor_msgs/msg/PointCloud2): The point cloud to publish
@@ -21,12 +24,12 @@ class TableFind(Node):
         super().__init__("table_find")
         self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
         self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
-        self._voxel =   self.create_publisher(PointCloud2, "pcl_voxel", 10)
-        self._voxel =   self.create_publisher(PointCloud2, "pcl_voxel", 10)
-        self._inplane =   self.create_publisher(PointCloud2, "pcl_inplane", 10)
+        self._voxel = self.create_publisher(PointCloud2, "pcl_voxel", 10)
+        self._voxel = self.create_publisher(PointCloud2, "pcl_voxel", 10)
+        self._inplane = self.create_publisher(PointCloud2, "pcl_inplane", 10)
 
-    def pcl_handler(self, pcl_msg):
-        """ Get the point cloud and perform some transformations and publish them """
+    def pcl_handler(self, pcl_msg: PointCloud2):
+        """Get the point cloud, perform some transformations, and publish them."""
         # Convert ROS2 message to a PointCloud used by PCL
         pcl_in = pcl.PointCloud(
             sensor_msgs_py.point_cloud2.read_points_numpy(pcl_msg, ["x", "y", "z"])

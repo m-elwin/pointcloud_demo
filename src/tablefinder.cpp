@@ -55,6 +55,7 @@ public:
     TableFind():
         Node("table_find")
     {
+        cropped_pub = create_publisher<sensor_msgs::msg::PointCloud2>("pcl_cropped", 10);
         subscriber = create_subscription<sensor_msgs::msg::PointCloud2>
             ("pcl_handler", 10, [this](const sensor_msgs::msg::PointCloud2 & pointcloud_msg)
             {
@@ -76,7 +77,7 @@ public:
                 // Convert output point cloud to a ros messages
                 sensor_msgs::msg::PointCloud2 cropped_msg;
                 pcl_conversions::fromPCL(*pcl_cropped, cropped_msg);
-
+                cropped_pub->publish(cropped_msg);
                 //  self._cropped.publish(cropped_msg)
             /*
         # Downsample the point cloud to create a less dense point cloud which
@@ -118,6 +119,7 @@ public:
             });
     }
 private:
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cropped_pub;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber;
 
 };

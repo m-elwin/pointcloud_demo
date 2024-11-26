@@ -1,42 +1,11 @@
-/*import pcl
-import rclpy
-from rclpy.node import Node
-import sensor_msgs_py.point_cloud2
-from sensor_msgs.msg import PointCloud2
-import numpy as np
-
-
-class TableFind(Node):
-    def __init__(self):
-        """
-        Create a ROS Node that extracts a table (or other flat surface) from a point cloud.
-
-        Subscriptions
-        -------------
-        pcl_handler (sensor_msgs/msg/PointCloud2): The point cloud to publish
-
-        Publishers
-        ----------
-        pcl_cropped (sensor_msgs/msg/PointCloud2): The cropped point cloud
-        pcl_voxel   (sensor_msgs/msg/PointCloud2): The voxelized point cloud
-        pcl_inplane (sensor_msgs/msg/PointCloud2): The plane extracted from the point cloud
-        """
-        super().__init__("table_find")
-        self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
-        self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
-        self._voxel = self.create_publisher(PointCloud2, "pcl_voxel", 10)
-        self._voxel = self.create_publisher(PointCloud2, "pcl_voxel", 10)
-        self._inplane = self.create_publisher(PointCloud2, "pcl_inplane", 10)
-
-    def pcl_handler(self, pcl_msg: PointCloud2):
-
-*/
-
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "pcl/point_types.h"
+#include "pcl/conversions.h"
 #include "pcl/filters/crop_box.h"
+#include "pcl/filters/extract_indices.h"
 #include "pcl/filters/voxel_grid.h"
+#include "pcl/segmentation/sac_segmentation.h"
 #include "pcl_conversions/pcl_conversions.h"
 
 class TableFind : public rclcpp::Node
@@ -58,6 +27,7 @@ public:
     {
         cropped_pub = create_publisher<sensor_msgs::msg::PointCloud2>("pcl_cropped", 10);
         voxel_pub = create_publisher<sensor_msgs::msg::PointCloud2>("pcl_voxel", 10);
+        inplane_pub = create_publisher<sensor_msgs::msg::PointCloud2>("pcl_inplane", 10);
         subscriber = create_subscription<sensor_msgs::msg::PointCloud2>
             ("pcl_handler", 10, [this](const sensor_msgs::msg::PointCloud2 & pointcloud_msg)
             {
@@ -102,33 +72,43 @@ public:
                 pcl_conversions::fromPCL(*pcl_voxel, voxel_msg);
                 voxel_pub->publish(voxel_msg);
 
-            /*
-        # segment the table from the objects
-        segmenter = pcl_voxel.make_segmenter()
-        segmenter.set_model_type(pcl.SACMODEL_PLANE)
-        segmenter.set_distance_threshold(0.02)
-        indices, coefficients = segmenter.segment()
+                // segment the table from the objects.
+                // The segmenter does not accept PCLPointCloud2 objects
+                // So we need to convert first
+                auto pcl_voxel_xyz = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+                pcl::fromPCLPointCloud2(*pcl_voxel, *pcl_voxel_xyz);
+                pcl::SACSegmentation<pcl::PointXYZ> segmenter;
+                segmenter.setModelType(pcl::SACMODEL_PLANE);
+                segmenter.setDistanceThreshold(0.02);
 
-        # We now have indices of the inliers of the plane
-        # and the coefficients of that plane
-        # Next, need to convert to point clouds
-        if len(indices) == 0:
-            # No plane was found
-            return
+                segmenter.setInputCloud(pcl_voxel_xyz);
 
-        # Get all the points that lie in the plane and create a new pointcloud with them
-        pcl_inplane = np.copy(pcl_voxel)[indices]
-        inplane_msg = sensor_msgs_py.point_cloud2.create_cloud_xyz32(
-            pcl_msg.header,
-            pcl_inplane
-        )
+                auto inliers = std::make_shared<pcl::PointIndices>(); // will hold indices of the points that are in the plane
+                pcl::ModelCoefficients coefficients; // holds coefficients for the equation of the plane
+                segmenter.segment(*inliers, coefficients);
+                if(inliers->indices.size() == 0)
+                {
+                    // Not able to segment
+                    return;
+                }
 
-        self._inplane.publish(inplane_msg)*/
+                // We now have indices of the inliers of the plane, which can be used to extract the points
+                pcl::ExtractIndices<pcl::PCLPointCloud2> extracter;
+                extracter.setInputCloud(pcl_voxel);
+                extracter.setIndices(inliers);
+                auto pcl_inplane = std::make_shared<pcl::PCLPointCloud2>();
+                extracter.filter(*pcl_inplane);
+
+                // convert to ROS 2 message
+                sensor_msgs::msg::PointCloud2 inplane_msg;
+                pcl_conversions::fromPCL(*pcl_inplane, inplane_msg);
+                inplane_pub->publish(inplane_msg);
             });
     }
 private:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cropped_pub;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr voxel_pub;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr inplane_pub;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber;
 
 };

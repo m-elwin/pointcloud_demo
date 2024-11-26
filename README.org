@@ -1,11 +1,12 @@
 #+TITLE: ROS 2 Point Cloud Demonstration
 #+AUTHOR: Matthew Elwin
 * Overview
-An example of processing point clouds using ROS 2 and python, with a Realsense D435i camera.
+An example of processing point clouds using ROS 2 and C++, for users primarily familiar with python.
+The =python/= subdirectory contains python code that used no-longer-maintained [[https://github.com/strawlab/python-pcl][python bindings for the PointCloud Library]].
+
+The C++ code in this package aims to remain as close to the python example as possible, to enable comparison.
+
+The code is designed for use with a Realsense D435i camera.
 More information about setting up the system can be found at [[https://nu-msr.github.io/ros_notes/ros2/3dsensing.html][3D Sensing Notes]]
 
-* Installation
-1. Install =python3-pcl= from =apt=
-2. Create a ROS workspace, clone this repository into the source space, and use =rosdep= to install any remaining dependencies
-* Instructions
 =ros2 launch pointcloud_demo table_demo.launch.xml=

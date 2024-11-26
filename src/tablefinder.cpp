@@ -113,12 +113,6 @@ private:
 
 };
 
-    /*        self._sub = self.create_subscription(PointCloud2, "pcl_handler", self.pcl_handler, 10)
-        self._cropped = self.create_publisher(PointCloud2, "pcl_cropped", 10)
-        self._voxel = self.create_publisher(PointCloud2, "pcl_voxel", 10)
-        self._voxel = self.create_publisher(PointCloud2, "pcl_voxel", 10)
-        self._inplane = self.create_publisher(PointCloud2, "pcl_inplane", 10)
-    */
 int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);

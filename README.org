@@ -1,6 +1,9 @@
 #+TITLE: ROS 2 Point Cloud Demonstration
 #+AUTHOR: Matthew Elwin
 * Overview
+This repository is no-longer maintained. Instead, there is [[https://github.com/m-elwin/o3d_pointclouds][A Python ROS 2 Pointcloud Demo, using Open3D]]
+
+* Overview
 An example of processing point clouds using ROS 2 and C++, for users primarily familiar with python.
 The =python/= subdirectory contains python code that used no-longer-maintained [[https://github.com/strawlab/python-pcl][python bindings for the PointCloud Library]].
 
